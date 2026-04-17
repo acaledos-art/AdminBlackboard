@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador SIS — Blackboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --border: #e2e0da;
+  --border-strong: #c8c5bc;
+  --text: #1c1b18;
+  --text-muted: #6b6860;
+  --text-faint: #a09e98;
+  --accent: #2563eb;
+  --accent-bg: #eff6ff;
+  --accent-border: #bfdbfe;
+  --success: #16a34a;
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+  --warn: #d97706;
+  --warn-bg: #fffbeb;
+  --warn-border: #fde68a;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+.page { max-width: 780px; margin: 0 auto; }
+.header { margin-bottom: 1.5rem; }
+.header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+.header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+/* Config banner */
+.config-banner { background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 10px; }
+.config-banner.hidden { display: none; }
+.config-banner-body { flex: 1; font-size: 13px; color: var(--warn); font-weight: 500; }
+.config-banner-body span { font-size: 12px; color: var(--text-muted); font-weight: 400; display: block; margin-top: 2px; }
+.config-btn { font-size: 12px; background: var(--warn); color: #fff; border: none; border-radius: var(--radius-sm); padding: 6px 14px; cursor: pointer; font-family: var(--sans); font-weight: 500; flex-shrink: 0; }
+
+/* Config panel */
+.config-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; display: none; }
+.config-panel.open { display: block; }
+.config-panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.config-panel .sub { font-size: 12px; color: var(--text-muted); margin-bottom: 1rem; }
+.config-panel .sub a { color: var(--accent); text-decoration: none; }
+.cfg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.field input { font-family: var(--mono); font-size: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--bg); color: var(--text); }
+.field input:focus { outline: none; border-color: var(--accent); background: #fff; }
+.field .hint { font-size: 11px; color: var(--text-faint); line-height: 1.4; }
+
+/* Steps */
+.steps { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 14px; margin: 12px 0; }
+.steps p { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+.steps ol { padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.steps ol li { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.steps ol li a { color: var(--accent); }
+.steps ol li code { font-family: var(--mono); font-size: 11px; background: var(--surface); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
+.tab { font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 8px 16px; border: none; background: none; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.form-field input, .form-field select { font-family: var(--sans); font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--bg); color: var(--text); }
+.form-field input:focus, .form-field select:focus { outline: none; border-color: var(--accent); background: #fff; }
+.req { color: var(--danger); }
+.btn { font-family: var(--sans); font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: var(--radius-sm); padding: 8px 16px; cursor: pointer; transition: all 0.12s; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--bg); }
+.btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+.btn.primary:hover { opacity: 0.85; }
+.btn.danger { color: var(--danger); border-color: var(--danger-border); }
+.btn.danger:hover { background: var(--danger-bg); }
+.btn.success-btn { color: var(--success); border-color: var(--success-border); background: var(--success-bg); }
+.btn.sm { font-size: 12px; padding: 5px 12px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem; }
+.alert { font-size: 12px; padding: 8px 12px; border-radius: var(--radius-sm); margin: 8px 0; }
+.alert.ok { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.alert.err { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+.alert.info { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th { background: var(--bg); padding: 8px 12px; text-align: left; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--bg); }
+.badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+pre.script-out { font-family: var(--mono); font-size: 11px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; overflow-x: auto; white-space: pre; color: var(--text); line-height: 1.6; max-height: 180px; overflow-y: auto; }
+.drop-area { border: 2px dashed var(--border-strong); border-radius: var(--radius); padding: 2rem; text-align: center; color: var(--text-muted); font-size: 13px; cursor: pointer; }
+.drop-area:hover { background: var(--bg); }
+.divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+.section-label { font-size: 13px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.filename-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.filename-row input { font-family: var(--mono); font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 10px; background: var(--bg); color: var(--text); width: 210px; }
+.filename-row input:focus { outline: none; border-color: var(--accent); background: #fff; }
+.note { font-size: 11px; color: var(--text-faint); margin-top: 6px; line-height: 1.5; }
+
+/* Spinner */
+.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>Generador SIS — Blackboard</h1>
+    <p>Genera el script y envíalo por email directamente desde aquí</p>
+  </div>
+
+  <!-- Config banner -->
+  <div class="config-banner" id="config-banner">
+    <div class="config-banner-body">
+      ⚙️ Configuración requerida
+      <span>Ingresa tus credenciales de EmailJS y el email de destino para activar el envío.</span>
+    </div>
+    <button class="config-btn" onclick="toggleConfig()">Configurar</button>
+  </div>
+
+  <!-- Config panel -->
+  <div class="config-panel" id="config-panel">
+    <h3>⚙️ Configuración de EmailJS</h3>
+    <p class="sub">EmailJS permite enviar emails directo desde el navegador, sin servidor. Es gratis hasta 200 emails/mes. <a href="https://www.emailjs.com" target="_blank">emailjs.com →</a></p>
+
+    <div class="steps">
+      <p>Cómo obtener las credenciales (5 min):</p>
+      <ol>
+        <li>Crea una cuenta gratis en <a href="https://www.emailjs.com" target="_blank">emailjs.com</a></li>
+        <li>Ve a <strong>Email Services</strong> → conecta tu Gmail → copia el <code>Service ID</code></li>
+        <li>Ve a <strong>Email Templates</strong> → crea una plantilla con las variables indicadas abajo → copia el <code>Template ID</code></li>
+        <li>Ve a <strong>Account</strong> → copia tu <code>Public Key</code></li>
+        <li>Pega los tres valores abajo y guarda</li>
+      </ol>
+    </div>
+
+    <div class="cfg-grid">
+      <div class="field">
+        <label>Public Key</label>
+        <input type="text" id="cfg-pubkey" placeholder="ej: abc123XYZ...">
+        <span class="hint">Account → General → Public Key</span>
+      </div>
+      <div class="field">
+        <label>Service ID</label>
+        <input type="text" id="cfg-service" placeholder="ej: service_xxxxxx">
+        <span class="hint">Email Services → tu servicio → Service ID</span>
+      </div>
+      <div class="field">
+        <label>Template ID</label>
+        <input type="text" id="cfg-template" placeholder="ej: template_xxxxxx">
+        <span class="hint">Email Templates → tu plantilla → Template ID</span>
+      </div>
+      <div class="field">
+        <label>Email de destino</label>
+        <input type="email" id="cfg-email" placeholder="equipo@gmail.com">
+        <span class="hint">Correo que recibirá los scripts</span>
+      </div>
+    </div>
+
+    <div class="steps" style="margin-top:12px;">
+      <p>Variables que debe tener tu plantilla de EmailJS:</p>
+      <ol>
+        <li><code>{{to_email}}</code> — email de destino</li>
+        <li><code>{{from_name}}</code> — nombre de quien genera</li>
+        <li><code>{{fecha}}</code> — fecha y hora</li>
+        <li><code>{{curso}}</code> — ID del curso</li>
+        <li><code>{{total}}</code> — cantidad de usuarios</li>
+        <li><code>{{script}}</code> — el script completo</li>
+      </ol>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="saveConfig()">Guardar configuración</button>
+      <button class="btn" onclick="toggleConfig()">Cancelar</button>
+    </div>
+    <div id="cfg-msg"></div>
+  </div>
+
+  <!-- Main card -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('form')">Formulario manual</button>
+      <button class="tab" onclick="switchTab('upload')">Subir Excel/CSV</button>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <div class="form-field">
+        <label>Tu nombre <span class="req">*</span></label>
+        <input id="who-name" placeholder="Ej: Maria Lopez" style="max-width:280px;">
+      </div>
+    </div>
+
+    <div id="panel-form">
+      <div class="form-grid">
+        <div class="form-field"><label>external_person_key <span class="req">*</span></label><input id="f1" placeholder="P000396446"></div>
+        <div class="form-field"><label>user_id <span class="req">*</span></label><input id="f2" placeholder="N.GarciaVer"></div>
+        <div class="form-field"><label>passwd <span class="req">*</span></label><input id="f3" placeholder="O6Tb56m"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-field"><label>firstname <span class="req">*</span></label><input id="f4" placeholder="FRANCO NICOLAS"></div>
+        <div class="form-field"><label>middlename</label><input id="f5" placeholder="(opcional)"></div>
+        <div class="form-field"><label>lastname <span class="req">*</span></label><input id="f6" placeholder="GARCIA VERGARA"></div>
+      </div>
+      <div class="form-grid">
+        <div class="form-field"><label>student_id <span class="req">*</span></label><input id="f7" placeholder="P000396446"></div>
+        <div class="form-field"><label>email <span class="req">*</span></label><input id="f8" type="email" placeholder="correo@email.com"></div>
+        <div class="form-field"><label>available_ind</label>
+          <select id="f9"><option value="Y">Y</option><option value="N">N</option></select>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-field"><label>row_status</label>
+          <select id="f10"><option value="ENABLED">ENABLED</option><option value="DISABLED">DISABLED</option></select>
+        </div>
+        <div class="form-field"><label>data_source_key</label>
+          <select id="f11"><option value="SYSTEM">SYSTEM</option></select>
+        </div>
+        <div class="form-field"><label>institution_role</label>
+          <select id="f12"><option value="PRE">PRE</option><option value="POS">POS</option><option value="STAFF">STAFF</option><option value="FACULTY">FACULTY</option></select>
+        </div>
+      </div>
+      <div id="form-msg"></div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="addUser()">+ Agregar usuario</button>
+        <button class="btn" onclick="clearForm()">Limpiar campos</button>
+      </div>
+    </div>
+
+    <div id="panel-upload" style="display:none;">
+      <div class="drop-area" onclick="document.getElementById('fileInput').click()">
+        <div style="font-size:28px;margin-bottom:8px;">📄</div>
+        <div>Haz clic para seleccionar <strong>Excel (.xlsx) o CSV</strong></div>
+        <div style="font-size:11px;color:var(--text-faint);margin-top:6px;">Columnas en el mismo orden que el formato SIS</div>
+      </div>
+      <input type="file" id="fileInput" accept=".csv,.xlsx" style="display:none" onchange="handleFile(event)">
+      <div id="upload-msg"></div>
+    </div>
+  </div>
+
+  <!-- Table + actions -->
+  <div id="table-section" style="display:none;">
+    <div class="section-label">
+      Usuarios agregados <span class="badge" id="count-badge">0</span>
+      <button class="btn danger sm" onclick="clearAll()" style="margin-left:auto;">Limpiar todo</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>external_person_key</th><th>user_id</th><th>firstname</th><th>lastname</th><th>email</th><th>role</th><th>status</th><th></th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-label" style="margin-top:1rem;">Vista previa del script</div>
+    <pre class="script-out" id="preview"></pre>
+
+    <div class="divider"></div>
+
+    <!-- Download -->
+    <div class="section-label">Descargar</div>
+    <div class="filename-row">
+      <input type="text" id="filename" value="usuarios_blackboard">
+      <span style="font-size:13px;color:var(--text-muted);">.txt</span>
+      <button class="btn" onclick="download()">⬇ Descargar .txt</button>
+      <button class="btn" id="copy-btn" onclick="copyContent()">Copiar contenido</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Send -->
+    <div class="section-label">Enviar por email</div>
+    <div id="send-msg"></div>
+    <button class="btn primary" id="send-btn" onclick="sendEmail()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Enviar email
+    </button>
+    <p class="note">El email se envía directamente desde esta página al correo configurado, con el script en el cuerpo del mensaje.</p>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+const HEADER = "external_person_key|user_id|passwd|firstname|middlename|lastname|student_id|email|available_ind|row_status|data_source_key|institution_role";
+let users = [];
+
+// Config
+function loadConfig() {
+  return {
+    pubkey:   localStorage.getItem('bb_pubkey')   || '',
+    service:  localStorage.getItem('bb_service')  || '',
+    template: localStorage.getItem('bb_template') || '',
+    email:    localStorage.getItem('bb_email')    || ''
+  };
+}
+function saveConfig() {
+  const vals = {
+    pubkey:   document.getElementById('cfg-pubkey').value.trim(),
+    service:  document.getElementById('cfg-service').value.trim(),
+    template: document.getElementById('cfg-template').value.trim(),
+    email:    document.getElementById('cfg-email').value.trim()
+  };
+  if (!vals.pubkey || !vals.service || !vals.template || !vals.email) {
+    showMsg('cfg-msg', 'Completa todos los campos.', 'err'); return;
+  }
+  localStorage.setItem('bb_pubkey',   vals.pubkey);
+  localStorage.setItem('bb_service',  vals.service);
+  localStorage.setItem('bb_template', vals.template);
+  localStorage.setItem('bb_email',    vals.email);
+  emailjs.init({ publicKey: vals.pubkey });
+  showMsg('cfg-msg', 'Configuración guardada ✓', 'ok');
+  setTimeout(() => { toggleConfig(); checkConfig(); }, 1200);
+}
+function toggleConfig() {
+  const panel = document.getElementById('config-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    const c = loadConfig();
+    document.getElementById('cfg-pubkey').value   = c.pubkey;
+    document.getElementById('cfg-service').value  = c.service;
+    document.getElementById('cfg-template').value = c.template;
+    document.getElementById('cfg-email').value    = c.email;
+  }
+}
+function checkConfig() {
+  const c = loadConfig();
+  const ok = c.pubkey && c.service && c.template && c.email;
+  document.getElementById('config-banner').classList.toggle('hidden', !!ok);
+  if (ok) emailjs.init({ publicKey: c.pubkey });
+}
+
+// Tabs
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='form')||(i===1&&tab==='upload')));
+  document.getElementById('panel-form').style.display   = tab === 'form'   ? '' : 'none';
+  document.getElementById('panel-upload').style.display = tab === 'upload' ? '' : 'none';
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="alert ${type}">${text}</div>`;
+  if (type !== 'info') setTimeout(() => el.innerHTML = '', 4000);
+}
+
+function addUser() {
+  const required = ['f1','f2','f3','f4','f6','f7','f8'];
+  for (const r of required) {
+    if (!document.getElementById(r).value.trim()) {
+      showMsg('form-msg', 'Completa los campos obligatorios (marcados con *)', 'err'); return;
+    }
+  }
+  const vals = ['f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12'].map(f => document.getElementById(f).value.trim());
+  users.push(vals);
+  renderTable();
+  clearForm();
+  showMsg('form-msg', 'Usuario agregado correctamente ✓', 'ok');
+}
+
+function clearForm() {
+  ['f1','f2','f3','f4','f5','f6','f7','f8'].forEach(f => document.getElementById(f).value = '');
+}
+
+function removeUser(i) { users.splice(i,1); renderTable(); }
+
+function getContent() {
+  return HEADER + '\n' + users.map(u => u.join('|')).join('\n');
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  const visible = users.length > 0;
+  document.getElementById('table-section').style.display = visible ? 'block' : 'none';
+  document.getElementById('count-badge').textContent = users.length;
+  tbody.innerHTML = users.map((u,i) =>
+    `<tr>
+      <td>${i+1}</td><td>${u[0]}</td><td>${u[1]}</td><td>${u[3]}</td>
+      <td>${u[5]}</td><td>${u[7]}</td><td>${u[11]}</td><td>${u[9]}</td>
+      <td><button class="btn danger sm" onclick="removeUser(${i})">Quitar</button></td>
+    </tr>`
+  ).join('');
+  if (visible) document.getElementById('preview').textContent = getContent();
+}
+
+function clearAll() { users = []; renderTable(); }
+
+function download() {
+  if (!users.length) return;
+  const name = (document.getElementById('filename').value.trim() || 'usuarios_blackboard') + '.txt';
+  const blob = new Blob([getContent()], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyContent() {
+  if (!users.length) return;
+  navigator.clipboard.writeText(getContent()).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ Copiado';
+    btn.classList.add('success-btn');
+    setTimeout(() => { btn.textContent = 'Copiar contenido'; btn.classList.remove('success-btn'); }, 2000);
+  });
+}
+
+async function sendEmail() {
+  if (!users.length) { showMsg('send-msg', 'No hay usuarios para enviar.', 'err'); return; }
+
+  const who = document.getElementById('who-name').value.trim();
+  if (!who) { showMsg('send-msg', 'Ingresa tu nombre antes de enviar.', 'err'); return; }
+
+  const c = loadConfig();
+  if (!c.pubkey || !c.service || !c.template || !c.email) {
+    showMsg('send-msg', 'Configura EmailJS primero (botón Configurar arriba).', 'err'); return;
+  }
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Enviando...';
+
+  const fecha = new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' });
+
+  try {
+    await emailjs.send(c.service, c.template, {
+      to_email:  c.email,
+      from_name: who,
+      fecha:     fecha,
+      curso:     users[0] ? users[0][0] : '',
+      total:     users.length,
+      script:    getContent()
+    });
+    showMsg('send-msg', `✓ Email enviado a ${c.email}`, 'ok');
+  } catch (err) {
+    showMsg('send-msg', 'Error al enviar: ' + (err.text || JSON.stringify(err)), 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar email';
+  }
+}
+
+// File upload
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = ev => parseCSV(ev.target.result);
+    reader.readAsText(file, 'UTF-8');
+  } else if (ext === 'xlsx') {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      processRows(rows);
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    showMsg('upload-msg', 'Formato no soportado. Usa .csv o .xlsx', 'err');
+  }
+  e.target.value = '';
+}
+function parseCSV(text) {
+  const rows = text.split('\n').map(r => r.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+  processRows(rows);
+}
+function processRows(rows) {
+  if (!rows.length) return;
+  let start = rows[0][0] && rows[0][0].toLowerCase().includes('external') ? 1 : 0;
+  let added = 0;
+  for (let i = start; i < rows.length; i++) {
+    const r = rows[i].map(c => String(c).trim());
+    if (r.every(c => !c)) continue;
+    while (r.length < 12) r.push('');
+    users.push(r.slice(0, 12));
+    added++;
+  }
+  renderTable();
+  switchTab('form');
+  showMsg('form-msg', `${added} usuario(s) importado(s) desde el archivo ✓`, 'ok');
+}
+
+checkConfig();
+</script>
+</body>
+</html>
